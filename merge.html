@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Lab Merge - Auto Spawn</title>
+    <style>
+        body {
+            background: #0f172a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        
+        .back-link {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            text-decoration: none;
+            color: #38bdf8;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        
+        .back-link:hover {
+            color: white;
+            transform: translateX(-5px);
+        }
+        
+        .game-container {
+            text-align: center;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 80px);
+            grid-template-rows: repeat(4, 80px);
+            gap: 10px;
+            background: #1e293b;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid #334155;
+            margin-bottom: 20px;
+        }
+        
+        .slot {
+            width: 80px;
+            height: 80px;
+            background: #0f172a;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #1e293b;
+        }
+        
+        .item {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: grab;
+            user-select: none;
+            transition: transform 0.1s;
+            font-size: 1.2rem;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        /* Progress Bar Styles */
+        
+        .timer-container {
+            width: 350px;
+            height: 10px;
+            background: #1e293b;
+            border-radius: 5px;
+            margin: 10px auto;
+            overflow: hidden;
+            border: 1px solid #334155;
+        }
+        
+        .timer-fill {
+            height: 100%;
+            width: 0%;
+            background: #38bdf8;
+            transition: width 0.1s linear;
+        }
+        /* Level Colors */
+        
+        .lvl-1 {
+            background: #94a3b8;
+            color: white;
+        }
+        
+        .lvl-2 {
+            background: #4ade80;
+            box-shadow: 0 0 15px #4ade80;
+        }
+        
+        .lvl-3 {
+            background: #38bdf8;
+            box-shadow: 0 0 15px #38bdf8;
+        }
+        
+        .lvl-4 {
+            background: #818cf8;
+            box-shadow: 0 0 15px #818cf8;
+        }
+        
+        .lvl-5 {
+            background: #f472b6;
+            box-shadow: 0 0 15px #f472b6;
+        }
+        
+        .lvl-max {
+            background: #fbbf24;
+            box-shadow: 0 0 20px #fbbf24;
+            color: black;
+        }
+    </style>
+</head>
+
+<body>
+
+    <a href="index.html" class="back-link">← BACK TO ARCADE</a>
+
+    <div class="game-container">
+        <h1>NEON MERGE</h1>
+        <p id="status-msg" style="color: #64748b;">Merging cells... Next drop soon!</p>
+
+        <div class="timer-container">
+            <div id="timerFill" class="timer-fill"></div>
+        </div>
+
+        <div class="grid" id="grid"></div>
+    </div>
+
+    <script>
+        const gridElement = document.getElementById('grid');
+        const timerFill = document.getElementById('timerFill');
+        const statusMsg = document.getElementById('status-msg');
+
+        const slots = 16;
+        let inventory = Array(slots).fill(null);
+        let draggedItemIndex = null;
+
+        // Timer Variables
+        let timeLeft = 0;
+        const spawnRate = 4000; // 4 seconds
+
+        function createGrid() {
+            gridElement.innerHTML = '';
+            inventory.forEach((item, index) => {
+                const slot = document.createElement('div');
+                slot.className = 'slot';
+                slot.dataset.index = index;
+                slot.addEventListener('dragover', e => e.preventDefault());
+                slot.addEventListener('drop', handleDrop);
+
+                if (item) {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = `item lvl-${item >= 6 ? 'max' : item}`;
+                    itemDiv.innerText = item;
+                    itemDiv.draggable = true;
+                    itemDiv.addEventListener('dragstart', () => draggedItemIndex = index);
+                    slot.appendChild(itemDiv);
+                }
+                gridElement.appendChild(slot);
+            });
+        }
+
+        function spawnItem() {
+            const emptySlots = inventory.map((v, i) => v === null ? i : null).filter(v => v !== null);
+
+            if (emptySlots.length === 0) {
+                statusMsg.innerText = "BOARD FULL! MERGE NOW!";
+                statusMsg.style.color = "#fb7185";
+                return;
+            } else {
+                statusMsg.innerText = "Merging cells... Next drop soon!";
+                statusMsg.style.color = "#64748b";
+            }
+
+            const randomIndex = emptySlots[Math.floor(Math.random() * emptySlots.length)];
+            const rand = Math.random();
+            let level = 1;
+            if (rand > 0.9) level = 3;
+            else if (rand > 0.7) level = 2;
+
+            inventory[randomIndex] = level;
+            createGrid();
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const targetIndex = parseInt(e.currentTarget.dataset.index);
+            if (draggedItemIndex === null || draggedItemIndex === targetIndex) return;
+
+            const sourceLvl = inventory[draggedItemIndex];
+            const targetLvl = inventory[targetIndex];
+
+            if (targetLvl === null) {
+                inventory[targetIndex] = sourceLvl;
+                inventory[draggedItemIndex] = null;
+            } else if (sourceLvl === targetLvl && sourceLvl < 6) {
+                inventory[targetIndex] = sourceLvl + 1;
+                inventory[draggedItemIndex] = null;
+            }
+            createGrid();
+        }
+
+        // Timer Loop
+        function startAutoSpawn() {
+            setInterval(() => {
+                timeLeft += 100;
+                let percentage = (timeLeft / spawnRate) * 100;
+                timerFill.style.width = percentage + "%";
+
+                if (timeLeft >= spawnRate) {
+                    spawnItem();
+                    timeLeft = 0;
+                }
+            }, 100);
+        }
+
+        createGrid();
+        startAutoSpawn();
+    </script>
+</body>
+
+</html>

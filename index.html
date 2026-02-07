@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pawan's Arcade - Interactive Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Rajdhani:wght@600&display=swap" rel="stylesheet">
+    <style>
+         :root {
+            --bg: #020617;
+            --card-bg: rgba(15, 23, 42, 0.8);
+            --accent: #38bdf8;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+        
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 60px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        #starCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            z-index: 10;
+        }
+        
+        h1 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 4.5rem;
+            letter-spacing: 10px;
+            margin: 0;
+            background: linear-gradient(to bottom, #fff, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            width: 100%;
+            z-index: 10;
+        }
+        
+        .game-card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 40px 30px;
+            text-decoration: none;
+            color: inherit;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 320px;
+            /* Fixed height for consistency */
+            justify-content: center;
+        }
+        
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            transition: transform 0.3s ease;
+        }
+        
+        h2 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 2rem;
+            margin: 0;
+            transition: transform 0.3s ease;
+        }
+        /* THE DESCRIPTION TRICK */
+        
+        .description {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-top: 15px;
+            opacity: 0;
+            /* Hidden by default */
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            max-height: 0;
+            overflow: hidden;
+        }
+        /* HOVER EFFECTS */
+        
+        .game-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
+            transform: translateY(-10px);
+        }
+        
+        .game-card:hover .icon {
+            transform: scale(1.1);
+        }
+        
+        .game-card:hover h2 {
+            color: var(--accent);
+        }
+        
+        .game-card:hover .description {
+            opacity: 1;
+            /* Show on hover */
+            transform: translateY(0);
+            max-height: 100px;
+            /* Allow it to expand */
+        }
+        
+        footer {
+            margin-top: 80px;
+            text-align: center;
+            font-family: 'Rajdhani', sans-serif;
+            letter-spacing: 2px;
+            opacity: 0.8;
+        }
+        /* This targets only the 10th game card */
+        
+        .game-grid a:last-child {
+            grid-column: 1 / -1;
+            /* Spans from the first to the last column */
+            display: flex;
+            flex-direction: row;
+            /* Changes to horizontal layout */
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            height: 200px;
+            /* Slimmer height for the wide version */
+        }
+        /* Adjusting the text for the wide card so it stays centered */
+        
+        .game-grid a:last-child .description {
+            max-width: 400px;
+            margin-top: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <canvas id="starCanvas"></canvas>
+
+    <header>
+        <h1>MY ARCADE</h1>
+        <div style="color: var(--accent); font-weight: bold; margin-top: 10px;">PLAYER 1: ONLINE • 10 GAMES UNLOCKED</div>
+    </header>
+
+    <div class="game-grid">
+        <a href="Cyberpaddle.html" class="game-card">
+            <span class="icon">🏓</span>
+            <h2>Cyber Pong</h2>
+            <p class="description">Master the neon paddle in a high-speed battle against an evolving AI.</p>
+        </a>
+
+        <a href="Brick Breaker.html" class="game-card">
+            <span class="icon">🧱</span>
+            <h2>Brick Breaker</h2>
+            <p class="description">Smash through rainbow defenses using precision physics and rebounding angles.</p>
+        </a>
+
+        <a href="gravity.html" class="game-card">
+            <span class="icon">🌌</span>
+            <h2>Repulsor Pop</h2>
+            <p class="description">Harness cosmic gravity to herd particles and trigger massive chain reactions.</p>
+        </a>
+
+        <a href="runner.html" class="game-card">
+            <span class="icon">🏃</span>
+            <h2>Cyber Runner</h2>
+            <p class="description">Test your reflexes on an endless highway. Jump, survive, and keep the pace.</p>
+        </a>
+
+        <a href="drive.html" class="game-card">
+            <span class="icon">🏎️</span>
+            <h2>Neon Drive</h2>
+            <p class="description">High-stakes traffic weaving. Avoid the crashes and dominate the neon road.</p>
+        </a>
+
+        <a href="merge.html" class="game-card">
+            <span class="icon">🧪</span>
+            <h2>Neon Merge</h2>
+            <p class="description">A strategic puzzle of evolution. Combine cells to reach the ultimate energy level.</p>
+        </a>
+
+        <a href="fling.html" class="game-card">
+            <span class="icon">🤡</span>
+            <h2>Buddy Fling</h2>
+            <p class="description">Advanced ragdoll physics. Launch your buddy and reach for the deep cosmos.</p>
+        </a>
+
+        <a href="shooter.html" class="game-card">
+            <span class="icon">🚀</span>
+            <h2>Star Vanguard</h2>
+            <p class="description">Defend your sector from geometric swarms in this classic space shooter.</p>
+        </a>
+
+        <a href="core.html" class="game-card">
+            <span class="icon">🛡️</span>
+            <h2>Core Defender</h2>
+            <p class="description">Use your laser turret to vaporize intruders before they breach the core.</p>
+        </a>
+
+        <a href="demolish.html" class="game-card">
+            <span class="icon">🏗️</span>
+            <h2>The Wall</h2>
+            <p class="description">Total destruction. Launch heavy spheres to demolish the wall and win the arcade.</p>
+        </a>
+    </div>
+
+    <footer>
+        <p>MADE BY <span style="color: #fff;">PAWAN</span> | POWERED BY <span style="color: var(--accent);">GEMINI AI</span></p>
+    </footer>
+
+    <script>
+        const canvas = document.getElementById('starCanvas');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+        const starCount = 150;
+        let mouse = {
+            x: -1000,
+            y: -1000
+        };
+
+        function init() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            stars = [];
+            for (let i = 0; i < starCount; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 0.5,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5
+                });
+            }
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+        window.addEventListener('resize', init);
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "white";
+            stars.forEach(s => {
+                s.x += s.vx;
+                s.y += s.vy;
+                if (s.x < 0) s.x = canvas.width;
+                if (s.x > canvas.width) s.x = 0;
+                if (s.y < 0) s.y = canvas.height;
+                if (s.y > canvas.height) s.y = 0;
+
+                const dx = mouse.x - s.x;
+                const dy = mouse.y - s.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 150) {
+                    const angle = Math.atan2(dy, dx);
+                    const force = (150 - dist) / 15;
+                    s.x -= Math.cos(angle) * force;
+                    s.y -= Math.sin(angle) * force;
+                }
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            requestAnimationFrame(animate);
+        }
+        init();
+        animate();
+    </script>
+</body>
+
+</html>

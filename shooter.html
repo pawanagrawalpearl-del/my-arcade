@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Vanguard - Balanced</title>
+    <style>
+        body {
+            background: #020617;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+        
+        .back-link {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            text-decoration: none;
+            color: #38bdf8;
+            font-weight: bold;
+            transition: 0.3s;
+            z-index: 10;
+        }
+        
+        .back-link:hover {
+            color: white;
+            transform: translateX(-5px);
+        }
+        
+        canvas {
+            background: #000;
+            border: 2px solid #1e293b;
+            border-radius: 12px;
+            cursor: none;
+        }
+        
+        .stats {
+            position: absolute;
+            top: 20px;
+            pointer-events: none;
+            text-align: center;
+        }
+        
+        #score {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #4ade80;
+        }
+    </style>
+</head>
+
+<body>
+
+    <a href="index.html" class="back-link">← BACK TO ARCADE</a>
+
+    <div class="stats">
+        <div id="score">0</div>
+        <div style="color: #64748b;">Dodge & Destroy • Balanced Speed</div>
+    </div>
+
+    <canvas id="shooterCanvas" width="500" height="700"></canvas>
+
+    <script>
+        const canvas = document.getElementById("shooterCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreDisplay = document.getElementById("score");
+
+        let score = 0;
+        let gameOver = false;
+        let bullets = [];
+        let enemies = [];
+        let particles = [];
+        let frame = 0;
+
+        const player = {
+            x: 250,
+            y: 600,
+            r: 15,
+            color: '#38bdf8'
+        };
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            player.x = e.clientX - rect.left;
+            player.y = e.clientY - rect.top;
+        });
+
+        function spawnEnemy() {
+            const size = Math.random() * 20 + 15;
+            enemies.push({
+                x: Math.random() * (canvas.width - size),
+                y: -size,
+                size: size,
+                // SLOWED DOWN: Lower base and slower scaling
+                speed: Math.random() * 1.2 + 1.2 + (score / 4000),
+                hp: Math.ceil(size / 10),
+                color: `hsl(${Math.random() * 50 + 10}, 80%, 60%)`
+            });
+        }
+
+        function createExplosion(x, y, color) {
+            for (let i = 0; i < 10; i++) {
+                particles.push({
+                    x,
+                    y,
+                    vx: (Math.random() - 0.5) * 5,
+                    vy: (Math.random() - 0.5) * 5,
+                    alpha: 1,
+                    color
+                });
+            }
+        }
+
+        function update() {
+            if (gameOver) return;
+            frame++;
+
+            // Firing Rate: Every 7 frames instead of 8 (Faster shooting)
+            if (frame % 7 === 0) {
+                bullets.push({
+                    x: player.x,
+                    y: player.y - 20,
+                    speed: 12
+                });
+            }
+
+            if (frame % 50 === 0) spawnEnemy();
+
+            bullets.forEach((b, i) => {
+                b.y -= b.speed;
+                if (b.y < 0) bullets.splice(i, 1);
+            });
+
+            enemies.forEach((en, i) => {
+                en.y += en.speed;
+
+                const dist = Math.sqrt((player.x - en.x) ** 2 + (player.y - en.y) ** 2);
+                if (dist < player.r + en.size / 2) gameOver = true;
+
+                if (en.y > canvas.height) enemies.splice(i, 1);
+
+                bullets.forEach((b, bi) => {
+                    const bDist = Math.sqrt((b.x - en.x) ** 2 + (b.y - en.y) ** 2);
+                    if (bDist < en.size) {
+                        en.hp--;
+                        bullets.splice(bi, 1);
+                        if (en.hp <= 0) {
+                            createExplosion(en.x, en.y, en.color);
+                            enemies.splice(i, 1);
+                            score += 100;
+                            scoreDisplay.innerText = score;
+                        }
+                    }
+                });
+            });
+
+            particles.forEach((p, i) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 0.02;
+                if (p.alpha <= 0) particles.splice(i, 1);
+            });
+        }
+
+        function draw() {
+            ctx.fillStyle = 'rgba(2, 6, 23, 0.4)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = player.color;
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            ctx.moveTo(player.x, player.y - 20);
+            ctx.lineTo(player.x - 15, player.y + 12);
+            ctx.lineTo(player.x + 15, player.y + 12);
+            ctx.fill();
+
+            ctx.fillStyle = '#fff';
+            bullets.forEach(b => ctx.fillRect(b.x - 2, b.y, 4, 15));
+
+            enemies.forEach(en => {
+                ctx.shadowColor = en.color;
+                ctx.fillStyle = en.color;
+                ctx.fillRect(en.x - en.size / 2, en.y - en.size / 2, en.size, en.size);
+            });
+
+            particles.forEach(p => {
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, 3, 3);
+            });
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+
+            if (gameOver) {
+                ctx.fillStyle = "rgba(0,0,0,0.85)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = "white";
+                ctx.textAlign = "center";
+                ctx.font = "bold 30px Arial";
+                ctx.fillText("MISSION FAILED", canvas.width / 2, canvas.height / 2);
+                ctx.font = "18px Arial";
+                ctx.fillText("Click to Retry", canvas.width / 2, canvas.height / 2 + 40);
+            }
+        }
+
+        function loop() {
+            update();
+            draw();
+            if (!gameOver) requestAnimationFrame(loop);
+        }
+
+        canvas.addEventListener('click', () => {
+            if (gameOver) {
+                score = 0;
+                enemies = [];
+                bullets = [];
+                particles = [];
+                gameOver = false;
+                scoreDisplay.innerText = "0";
+                loop();
+            }
+        });
+
+        loop();
+    </script>
+</body>
+
+</html>
