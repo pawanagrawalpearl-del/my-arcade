@@ -10,56 +10,56 @@
             background: #020617; color: white; margin: 0; 
             font-family: 'Segoe UI', system-ui, sans-serif; 
             display: flex; flex-direction: column; align-items: center;
-            overflow-x: hidden;
+            overflow-x: hidden; min-height: 100vh;
         }
         
-        /* Interactive Starfield Background */
-        #starfield { position: fixed; top: 0; left: 0; z-index: -1; }
+        #starfield { position: fixed; top: 0; left: 0; z-index: -1; pointer-events: none; }
 
-        header { text-align: center; padding: 40px 20px; }
+        header { text-align: center; padding: 60px 20px; z-index: 10; }
         h1 { 
-            font-size: clamp(2rem, 8vw, 4rem); margin: 0; 
-            text-transform: uppercase; letter-spacing: 4px;
+            font-size: clamp(2.5rem, 10vw, 5rem); margin: 0; 
+            text-transform: uppercase; letter-spacing: 6px;
             color: var(--neon); text-shadow: 0 0 20px var(--neon);
+            font-weight: 800;
         }
-        p { color: #64748b; font-size: 1.1rem; margin-top: 10px; }
+        .subtitle { color: #94a3b8; font-size: 1.2rem; margin-top: 10px; letter-spacing: 2px; }
 
-        /* RESPONSIVE GRID */
         .arcade-grid {
             display: grid;
-            gap: 20px;
-            padding: 20px;
+            gap: 25px;
+            padding: 40px 20px;
             width: 90%;
             max-width: 1200px;
-            /* 1 column on mobile, 2 on tablets, 3+ on desktop */
+            /* Adaptive Grid: Stays in 1 column on mobile, expands on desktop */
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            z-index: 10;
         }
 
         .game-card {
-            background: rgba(30, 41, 59, 0.5);
+            background: rgba(15, 23, 42, 0.6);
             border: 1px solid rgba(56, 189, 248, 0.2);
-            border-radius: 16px;
-            padding: 30px;
+            border-radius: 12px;
+            padding: 40px 20px;
             text-align: center;
             text-decoration: none;
             color: white;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            display: flex; flex-direction: column; justify-content: center;
-            min-height: 150px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(5px);
+            display: flex; flex-direction: column; align-items: center;
         }
 
         .game-card:hover {
-            transform: translateY(-10px);
+            transform: scale(1.05);
             border-color: var(--neon);
             box-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
             background: rgba(56, 189, 248, 0.1);
         }
 
-        .game-card h2 { margin: 0; font-size: 1.5rem; letter-spacing: 1px; }
-        .game-card span { font-size: 0.8rem; color: #94a3b8; margin-top: 10px; text-transform: uppercase; }
+        .emoji { font-size: 2.5rem; margin-bottom: 15px; filter: drop-shadow(0 0 8px var(--neon)); }
+        .game-card h2 { margin: 0; font-size: 1.6rem; color: #f8fafc; }
+        .game-card p { font-size: 0.85rem; color: #64748b; margin-top: 12px; }
 
-        footer { padding: 40px; color: #334155; font-size: 0.8rem; }
+        footer { padding: 60px; color: #334155; font-size: 0.9rem; z-index: 10; }
     </style>
 </head>
 <body>
@@ -68,25 +68,26 @@
 
     <header>
         <h1>PAWAN'S ARCADE</h1>
-        <p>THE DECADE COLLECTION • POWERED BY GEMINI AI</p>
+        <div class="subtitle">THE DECADE COLLECTION</div>
     </header>
 
     <div class="arcade-grid">
-        <a href="Cyberpaddle.html" class="game-card"><h2>CYBER PADDLE</h2><span>Classic Pong • Neon Edition</span></a>
-        <a href="Brick Breaker.html" class="game-card"><h2>BRICK BREAKER</h2><span>Smash the Wall</span></a>
-        <a href="runner.html" class="game-card"><h2>CYBER RUNNER</h2><span>Infinite Escape</span></a>
-        <a href="shooter.html" class="game-card"><h2>STAR VANGUARD</h2><span>Space Shooter</span></a>
-        <a href="gravity.html" class="game-card"><h2>REPULSOR POP</h2><span>Physics Particles</span></a>
-        <a href="fling.html" class="game-card"><h2>BUDDY FLING</h2><span>Ragdoll Fun</span></a>
-        <a href="drive.html" class="game-card"><h2>NEON DRIVE</h2><span>Traffic Weaving</span></a>
-        <a href="merge.html" class="game-card"><h2>NEON MERGE</h2><span>Hexagonal Puzzle</span></a>
-        <a href="core.html" class="game-card"><h2>CORE DEFENDER</h2><span>Circular Defense</span></a>
+        <a href="Cyberpaddle.html" class="game-card"><div class="emoji">🏓</div><h2>CYBER PADDLE</h2><p>Neon Pong with Smart AI</p></a>
+        <a href="Brick Breaker.html" class="game-card"><div class="emoji">🧱</div><h2>BRICK BREAKER</h2><p>Classic Arcade Smash</p></a>
+        <a href="runner.html" class="game-card"><div class="emoji">🏃‍♂️</div><h2>CYBER RUNNER</h2><p>Infinite High-Speed Dash</p></a>
+        <a href="shooter.html" class="game-card"><div class="emoji">🚀</div><h2>STAR VANGUARD</h2><p>Galactic Bullet Hell</p></a>
+        <a href="gravity.html" class="game-card"><div class="emoji">🫧</div><h2>REPULSOR POP</h2><p>Interactive Physics Fun</p></a>
+        <a href="fling.html" class="game-card"><div class="emoji">🤸‍♂️</div><h2>BUDDY FLING</h2><p>Ragdoll Orbit Physics</p></a>
+        <a href="drive.html" class="game-card"><div class="emoji">🏎️</div><h2>NEON DRIVE</h2><p>High-Speed Highway Dodge</p></a>
+        <a href="merge.html" class="game-card"><div class="emoji">⬢</div><h2>NEON MERGE</h2><p>Hexagonal Puzzle Fusion</p></a>
+        <a href="core.html" class="game-card"><div class="emoji">🛡️</div><h2>CORE DEFENDER</h2><p>360° Laser Defense</p></a>
         <a href="demolish.html" class="game-card" style="border-color: var(--pink);">
-            <h2 style="color: var(--pink);">THE WALL</h2><span>The Grand Finale</span>
+            <div class="emoji" style="filter: drop-shadow(0 0 8px var(--pink));">💥</div>
+            <h2 style="color: var(--pink);">THE WALL</h2><p>The Grand Finale Destruction</p>
         </a>
     </div>
 
-    <footer>MADE BY PAWAN • 2026</footer>
+    <footer>MADE BY PAWAN • POWERED BY GEMINI AI • 2026</footer>
 
     <script>
         const canvas = document.getElementById('starfield');
@@ -101,26 +102,49 @@
 
         function initStars() {
             stars = [];
-            for (let i = 0; i < 150; i++) {
+            for (let i = 0; i < 180; i++) {
                 stars.push({
                     x: Math.random() * canvas.width,
                     y: Math.random() * canvas.height,
-                    size: Math.random() * 2,
-                    speed: Math.random() * 0.5
+                    size: Math.random() * 1.8,
+                    baseSpeed: Math.random() * 0.6 + 0.2,
+                    vx: 0,
+                    vy: 0
                 });
             }
         }
 
+        function handleInteraction(x, y) {
+            stars.forEach(s => {
+                const dx = s.x - x;
+                const dy = s.y - y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 150) {
+                    const force = (150 - dist) / 15;
+                    s.vx = (dx / dist) * force;
+                    s.vy = (dy / dist) * force;
+                }
+            });
+        }
+
+        window.addEventListener('mousemove', (e) => handleInteraction(e.clientX, e.clientY));
+        window.addEventListener('touchstart', (e) => handleInteraction(e.touches[0].clientX, e.touches[0].clientY));
+
         function animate() {
             ctx.fillStyle = '#020617';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = 'white';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
             stars.forEach(s => {
+                s.vx *= 0.96;
+                s.vy *= 0.96;
+                s.x += s.vx;
+                s.y += s.baseSpeed + s.vy;
+                if (s.y > canvas.height) s.y = 0;
+                if (s.x < 0) s.x = canvas.width;
+                if (s.x > canvas.width) s.x = 0;
                 ctx.beginPath();
                 ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
                 ctx.fill();
-                s.y += s.speed;
-                if (s.y > canvas.height) s.y = 0;
             });
             requestAnimationFrame(animate);
         }
