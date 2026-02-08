@@ -3,11 +3,11 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cyber Runner - Easy Mode</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cyber Runner - Mobile Edition</title>
     <style>
         body {
-            background: #0f172a;
+            background: #020617;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -17,6 +17,7 @@
             color: white;
             font-family: 'Segoe UI', sans-serif;
             overflow: hidden;
+            touch-action: none;
         }
         
         .back-link {
@@ -26,26 +27,26 @@
             text-decoration: none;
             color: #38bdf8;
             font-weight: bold;
-            transition: 0.3s;
             z-index: 10;
-        }
-        
-        .back-link:hover {
-            color: white;
-            transform: translateX(-5px);
         }
         
         canvas {
             background: #000;
-            border-bottom: 4px solid #38bdf8;
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 2px solid #1e293b;
+            max-width: 95vw;
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.1);
         }
         
-        .score {
-            font-size: 2rem;
+        .ui {
+            position: absolute;
+            top: 20px;
+            text-align: center;
+            pointer-events: none;
+        }
+        
+        #score {
+            font-size: 2.5rem;
             font-weight: bold;
-            margin-bottom: 10px;
             color: #38bdf8;
         }
     </style>
@@ -54,138 +55,160 @@
 <body>
 
     <a href="index.html" class="back-link">← BACK TO ARCADE</a>
-    <h1>CYBER RUNNER</h1>
-    <div class="score" id="score">0</div>
-    <canvas id="runnerCanvas" width="800" height="300"></canvas>
-    <p style="color: #64748b; margin-top: 15px;">Press SPACE or CLICK to Jump</p>
+
+    <div class="ui">
+        <div id="score">0</div>
+        <div style="color: #64748b;">Tap anywhere to Jump</div>
+    </div>
+
+    <canvas id="runnerCanvas" width="800" height="400"></canvas>
 
     <script>
         const canvas = document.getElementById("runnerCanvas");
         const ctx = canvas.getContext("2d");
-        const scoreElement = document.getElementById("score");
+        const scoreDisplay = document.getElementById("score");
 
-        let gameSpeed = 4; // Slower starting speed
         let score = 0;
-        let gameOver = false;
+        let gameSpeed = 5;
+        let isGameOver = false;
 
         const player = {
             x: 50,
-            y: 200,
-            width: 40,
-            height: 40,
-            color: "#38bdf8",
+            y: 300,
+            w: 40,
+            h: 40,
             dy: 0,
-            jumpForce: 11, // Balanced jump
-            gravity: 0.45, // Floatier gravity
+            jumpForce: 13,
+            gravity: 0.7,
             grounded: false
         };
+        const obstacles = [];
 
-        let obstacles = [];
-
-        function spawnObstacle() {
-            // Shorter obstacles
-            let height = Math.random() * (50 - 25) + 25;
-            obstacles.push({
-                x: canvas.width,
-                y: canvas.height - height,
-                width: 30,
-                height: height,
-                color: "#fb7185"
-            });
-        }
-
-        function jump() {
-            if (player.grounded && !gameOver) {
+        // --- UNIVERSAL JUMP TRIGGER ---
+        function triggerAction() {
+            if (isGameOver) {
+                reset();
+            } else if (player.grounded) {
                 player.dy = -player.jumpForce;
                 player.grounded = false;
             }
-            if (gameOver) resetGame();
         }
 
-        window.addEventListener("keydown", (e) => {
-            if (e.code === "Space") jump();
+        // Keyboard (Desktop)
+        window.addEventListener('keydown', (e) => {
+            if (e.code === "Space") triggerAction();
         });
-        canvas.addEventListener("mousedown", jump);
 
-        function resetGame() {
+        // Touch (Mobile)
+        window.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevents "ghost clicks" and scrolling
+            triggerAction();
+        }, {
+            passive: false
+        });
+
+        // Click (Mouse)
+        canvas.addEventListener('mousedown', triggerAction);
+
+        function spawnObstacle() {
+            if (Math.random() < 0.015) {
+                obstacles.push({
+                    x: 800,
+                    y: 310,
+                    w: 30,
+                    h: 30
+                });
+            }
+        }
+
+        function reset() {
             score = 0;
-            gameSpeed = 4;
-            obstacles = [];
-            player.y = 200;
+            gameSpeed = 5;
+            isGameOver = false;
+            obstacles.length = 0;
+            player.y = 300;
             player.dy = 0;
-            gameOver = false;
-            scoreElement.innerText = "0";
+            scoreDisplay.innerText = "0";
             animate();
         }
 
         function update() {
-            if (gameOver) return;
+            if (isGameOver) return;
+
+            score++;
+            scoreDisplay.innerText = Math.floor(score / 10);
+            if (score % 800 === 0) gameSpeed += 0.8;
 
             player.dy += player.gravity;
             player.y += player.dy;
 
-            if (player.y + player.height > canvas.height) {
-                player.y = canvas.height - player.height;
+            // Ground collision
+            if (player.y + player.h > 340) {
+                player.y = 340 - player.h;
                 player.dy = 0;
                 player.grounded = true;
             }
 
-            // Spawn obstacles less frequently
-            if (Math.random() < 0.008) spawnObstacle();
+            spawnObstacle();
 
-            obstacles.forEach((obs, index) => {
-                obs.x -= gameSpeed;
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].x -= gameSpeed;
 
-                if (
-                    player.x < obs.x + obs.width &&
-                    player.x + player.width > obs.x &&
-                    player.y < obs.y + obs.height &&
-                    player.y + player.height > obs.y
-                ) {
-                    gameOver = true;
+                // Hitbox Detection
+                if (player.x < obstacles[i].x + obstacles[i].w &&
+                    player.x + player.w > obstacles[i].x &&
+                    player.y < obstacles[i].y + obstacles[i].h &&
+                    player.y + player.h > obstacles[i].y) {
+                    isGameOver = true;
                 }
 
-                if (obs.x + obs.width < 0) {
-                    obstacles.splice(index, 1);
-                    score++;
-                    scoreElement.innerText = score;
-                    gameSpeed += 0.03; // Tiny speed increase
-                }
-            });
+                if (obstacles[i].x < -50) obstacles.splice(i, 1);
+            }
         }
 
         function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = player.color;
-            ctx.fillRect(player.x, player.y, player.width, player.height);
+            ctx.fillStyle = "#020617";
+            ctx.fillRect(0, 0, 800, 400);
 
-            ctx.fillStyle = "#fb7185";
-            obstacles.forEach(obs => {
-                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+            // Ground Line
+            ctx.strokeStyle = "#1e293b";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, 340);
+            ctx.lineTo(800, 340);
+            ctx.stroke();
+
+            // Player (Neon Blue Square)
+            ctx.fillStyle = "#38bdf8";
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#38bdf8";
+            ctx.fillRect(player.x, player.y, player.w, player.h);
+
+            // Obstacles (Neon Pink)
+            ctx.fillStyle = "#f472b6";
+            ctx.shadowColor = "#f472b6";
+            obstacles.forEach(ob => {
+                ctx.fillRect(ob.x, ob.y, ob.w, ob.h);
             });
+            ctx.shadowBlur = 0;
 
-            if (gameOver) {
-                ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            if (isGameOver) {
+                ctx.fillStyle = "rgba(0,0,0,0.8)";
+                ctx.fillRect(0, 0, 800, 400);
                 ctx.fillStyle = "white";
                 ctx.textAlign = "center";
-                ctx.font = "bold 40px Arial";
-                ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
-                ctx.font = "20px Arial";
-                ctx.fillText("Press SPACE to Restart", canvas.width / 2, canvas.height / 2 + 50);
+                ctx.font = "bold 40px Rajdhani";
+                ctx.fillText("CRASHED!", 400, 180);
+                ctx.font = "20px Rajdhani";
+                ctx.fillText("TAP OR SPACE TO REBOOT", 400, 230);
             }
         }
 
         function animate() {
-            if (!gameOver) {
-                update();
-                draw();
-                requestAnimationFrame(animate);
-            } else {
-                draw();
-            }
+            update();
+            draw();
+            if (!isGameOver) requestAnimationFrame(animate);
         }
-
         animate();
     </script>
 </body>
