@@ -3,8 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buddy True Fling - Arcade</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Buddy Fling - Touch Edition</title>
     <style>
         body {
             background: #020617;
@@ -17,6 +17,7 @@
             color: white;
             font-family: 'Segoe UI', sans-serif;
             overflow: hidden;
+            touch-action: none;
         }
         
         .back-link {
@@ -26,41 +27,21 @@
             text-decoration: none;
             color: #38bdf8;
             font-weight: bold;
-            transition: 0.3s;
             z-index: 10;
         }
         
-        .back-link:hover {
-            color: white;
-            transform: translateX(-5px);
-        }
-        
         canvas {
-            background: linear-gradient(#38bdf8, #020617);
+            background: radial-gradient(circle, #1e293b 0%, #020617 100%);
             border: 2px solid #334155;
-            border-radius: 15px;
-            cursor: grab;
+            max-width: 95vw;
+            max-height: 80vh;
         }
         
-        .stats {
+        .ui {
             position: absolute;
             top: 20px;
             text-align: center;
             pointer-events: none;
-        }
-        
-        #altitude {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #fbbf24;
-        }
-        
-        .indicator {
-            position: absolute;
-            bottom: 100px;
-            color: #38bdf8;
-            font-weight: bold;
-            display: none;
         }
     </style>
 </head>
@@ -69,203 +50,210 @@
 
     <a href="index.html" class="back-link">← BACK TO ARCADE</a>
 
-    <div class="stats">
-        <div id="altitude">0 m</div>
-        <div id="location" style="color: #fff; text-transform: uppercase; letter-spacing: 1px;">Ground Level</div>
+    <div class="ui">
+        <div style="color: #38bdf8; font-size: 1.5rem; font-weight: bold;">BUDDY FLING</div>
+        <div style="color: #64748b;">Grab and toss the buddy into orbit!</div>
     </div>
 
-    <div id="fallingAlert" class="indicator">⚠️ HE'S FALLING BACK DOWN! ⚠️</div>
-
-    <canvas id="ragdollCanvas" width="450" height="650"></canvas>
-    <p style="color: #94a3b8; margin-top: 15px;">Flick Buddy upwards to launch him!</p>
+    <canvas id="flingCanvas" width="800" height="600"></canvas>
 
     <script>
-        const canvas = document.getElementById("ragdollCanvas");
+        const canvas = document.getElementById("flingCanvas");
         const ctx = canvas.getContext("2d");
-        const altDisplay = document.getElementById("altitude");
-        const locDisplay = document.getElementById("location");
-        const alertBox = document.getElementById("fallingAlert");
 
-        let isDragging = false;
-        let lastMouse = {
+        let points = [];
+        let sticks = [];
+        let grabbedPoint = null;
+        let mouse = {
             x: 0,
-            y: 0
-        };
-        let mouseVel = {
-            x: 0,
-            y: 0
+            y: 0,
+            down: false
         };
 
-        const buddy = {
-            torso: {
-                x: 225,
-                y: 550,
-                vx: 0,
-                vy: 0,
-                r: 28
-            },
-            head: {
-                x: 225,
-                y: 505,
-                r: 20
-            },
-            lArm: {
-                x: 185,
-                y: 535,
-                r: 12
-            },
-            rArm: {
-                x: 265,
-                y: 535,
-                r: 12
-            },
-            lLeg: {
-                x: 200,
-                y: 600,
-                r: 14
-            },
-            rLeg: {
-                x: 250,
-                y: 600,
-                r: 14
-            }
-        };
+        function initRagdoll() {
+            // Create points (head, torso, limbs)
+            points.push({
+                x: 400,
+                y: 200,
+                oldX: 400,
+                oldY: 200,
+                r: 15,
+                mass: 1
+            }); // 0: Head
+            points.push({
+                x: 400,
+                y: 250,
+                oldX: 400,
+                oldY: 250,
+                r: 20,
+                mass: 1
+            }); // 1: Torso
+            points.push({
+                x: 350,
+                y: 250,
+                oldX: 350,
+                oldY: 250,
+                r: 10,
+                mass: 1
+            }); // 2: L-Hand
+            points.push({
+                x: 450,
+                y: 250,
+                oldX: 450,
+                oldY: 250,
+                r: 10,
+                mass: 1
+            }); // 3: R-Hand
+            points.push({
+                x: 380,
+                y: 320,
+                oldX: 380,
+                oldY: 320,
+                r: 12,
+                mass: 1
+            }); // 4: L-Foot
+            points.push({
+                x: 420,
+                y: 320,
+                oldX: 420,
+                oldY: 320,
+                r: 12,
+                mass: 1
+            }); // 5: R-Foot
 
-        function solveDistance(p1, p2, dist) {
-            const dx = p1.x - p2.x;
-            const dy = p1.y - p2.y;
-            const angle = Math.atan2(dy, dx);
-            p1.x = p2.x + Math.cos(angle) * dist;
-            p1.y = p2.y + Math.sin(angle) * dist;
+            const connect = (p1, p2, dist) => sticks.push({
+                p1: points[p1],
+                p2: points[p2],
+                length: dist
+            });
+            connect(0, 1, 50); // Neck
+            connect(1, 2, 50); // L-Arm
+            connect(1, 3, 50); // R-Arm
+            connect(1, 4, 70); // L-Leg
+            connect(1, 5, 70); // R-Leg
         }
 
-        canvas.addEventListener("mousedown", (e) => {
+        // --- UNIVERSAL INPUT ---
+        function getPos(e) {
             const rect = canvas.getBoundingClientRect();
-            const mx = e.clientX - rect.left;
-            const my = e.clientY - rect.top;
-            const d = Math.sqrt((mx - buddy.torso.x) ** 2 + (my - buddy.torso.y) ** 2);
-
-            if (d < 60) {
-                isDragging = true;
-                buddy.torso.vx = 0;
-                buddy.torso.vy = 0;
-                canvas.style.cursor = "grabbing";
-            }
-        });
-
-        window.addEventListener("mousemove", (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const mx = e.clientX - rect.left;
-            const my = e.clientY - rect.top;
-
-            mouseVel.x = mx - lastMouse.x;
-            mouseVel.y = my - lastMouse.y;
-
-            if (isDragging) {
-                buddy.torso.x = mx;
-                buddy.torso.y = my;
-            }
-            lastMouse = {
-                x: mx,
-                y: my
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
             };
-        });
+        }
 
-        window.addEventListener("mouseup", () => {
-            if (!isDragging) return;
-            isDragging = false;
-            canvas.style.cursor = "grab";
+        const onDown = (e) => {
+            const pos = getPos(e);
+            mouse.x = pos.x;
+            mouse.y = pos.y;
+            mouse.down = true;
+            points.forEach(p => {
+                const d = Math.sqrt((pos.x - p.x) ** 2 + (pos.y - p.y) ** 2);
+                if (d < 30) grabbedPoint = p;
+            });
+        };
 
-            // Direct fling speed
-            buddy.torso.vx = mouseVel.x * 0.9;
-            buddy.torso.vy = mouseVel.y * 0.9;
+        const onMove = (e) => {
+            if (e.touches) e.preventDefault();
+            const pos = getPos(e);
+            mouse.x = pos.x;
+            mouse.y = pos.y;
+        };
+
+        const onUp = () => {
+            mouse.down = false;
+            grabbedPoint = null;
+        };
+
+        canvas.addEventListener('mousedown', onDown);
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+
+        canvas.addEventListener('touchstart', onDown, {
+            passive: false
         });
+        canvas.addEventListener('touchmove', onMove, {
+            passive: false
+        });
+        window.addEventListener('touchend', onUp);
 
         function update() {
-            if (!isDragging) {
-                // Apply Physics
-                buddy.torso.vy += 0.25; // Gravity
-                buddy.torso.x += buddy.torso.vx;
-                buddy.torso.y += buddy.torso.vy;
+            const gravity = 0.3;
+            const friction = 0.99;
 
-                // Ground Collision
-                if (buddy.torso.y > canvas.height - 50) {
-                    buddy.torso.y = canvas.height - 50;
-                    buddy.torso.vy *= -0.5; // Bounce
-                    buddy.torso.vx *= 0.8; // Friction
+            points.forEach(p => {
+                if (p === grabbedPoint) {
+                    p.x = mouse.x;
+                    p.y = mouse.y;
+                    p.oldX = mouse.x;
+                    p.oldY = mouse.y;
+                } else {
+                    let vx = (p.x - p.oldX) * friction;
+                    let vy = (p.y - p.oldY) * friction;
+                    p.oldX = p.x;
+                    p.oldY = p.y;
+                    p.x += vx;
+                    p.y += vy + gravity;
                 }
 
-                // Wall Collision
-                if (buddy.torso.x < 40 || buddy.torso.x > canvas.width - 40) {
-                    buddy.torso.vx *= -0.7;
-                }
-            }
+                // Wall bounce
+                if (p.x > 800) p.x = 800;
+                if (p.x < 0) p.x = 0;
+                if (p.y > 600) p.y = 600;
+                if (p.y < 0) p.y = 0;
+            });
 
-            // Ragdoll constraints
-            const t = buddy.torso;
-            solveDistance(buddy.head, t, 45);
-            solveDistance(buddy.lArm, t, 50);
-            solveDistance(buddy.rArm, t, 50);
-            solveDistance(buddy.lLeg, t, 55);
-            solveDistance(buddy.rLeg, t, 55);
-
-            // Update Altitude UI based on how far above the floor he is
-            let currentAlt = Math.max(0, Math.floor((550 - buddy.torso.y) / 2));
-            altDisplay.innerText = currentAlt + " m";
-
-            // Show alert when he is falling from a high height
-            if (buddy.torso.y < -100 && buddy.torso.vy > 0) {
-                alertBox.style.display = "block";
-            } else {
-                alertBox.style.display = "none";
-            }
-        }
-
-        function drawPart(part, color, isHead = false) {
-            ctx.beginPath();
-            ctx.arc(part.x, part.y, part.r, 0, Math.PI * 2);
-            ctx.fillStyle = color;
-            ctx.fill();
-            ctx.strokeStyle = "white";
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            if (isHead) {
-                ctx.fillStyle = "black";
-                ctx.beginPath();
-                ctx.arc(part.x - 6, part.y - 2, 2, 0, Math.PI * 2);
-                ctx.arc(part.x + 6, part.y - 2, 2, 0, Math.PI * 2);
-                ctx.fill();
+            for (let i = 0; i < 5; i++) {
+                sticks.forEach(s => {
+                    const dx = s.p2.x - s.p1.x;
+                    const dy = s.p2.y - s.p1.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const diff = s.length - dist;
+                    const offX = (dx / dist) * diff * 0.5;
+                    const offY = (dy / dist) * diff * 0.5;
+                    if (s.p1 !== grabbedPoint) {
+                        s.p1.x -= offX;
+                        s.p1.y -= offY;
+                    }
+                    if (s.p2 !== grabbedPoint) {
+                        s.p2.x += offX;
+                        s.p2.y += offY;
+                    }
+                });
             }
         }
 
         function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, 800, 600);
 
-            // Connectors
-            ctx.beginPath();
-            ctx.strokeStyle = "#555";
-            ctx.lineWidth = 10;
-            ctx.lineCap = "round";
-            [buddy.head, buddy.lArm, buddy.rArm, buddy.lLeg, buddy.rLeg].forEach(p => {
-                ctx.moveTo(buddy.torso.x, buddy.torso.y);
-                ctx.lineTo(p.x, p.y);
+            ctx.strokeStyle = "#38bdf8";
+            ctx.lineWidth = 4;
+            sticks.forEach(s => {
+                ctx.beginPath();
+                ctx.moveTo(s.p1.x, s.p1.y);
+                ctx.lineTo(s.p2.x, s.p2.y);
+                ctx.stroke();
             });
-            ctx.stroke();
 
-            drawPart(buddy.torso, "#f472b6");
-            drawPart(buddy.head, "#fdba74", true);
-            drawPart(buddy.lArm, "#f472b6");
-            drawPart(buddy.rArm, "#f472b6");
-            drawPart(buddy.lLeg, "#f472b6");
-            drawPart(buddy.rLeg, "#f472b6");
+            points.forEach((p, i) => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = (p === grabbedPoint) ? "#f472b6" : "#38bdf8";
+                ctx.fill();
+            });
+
+            requestAnimationFrame(() => {
+                update();
+                draw();
+            });
         }
 
-        function loop() {
-            update();
-            draw();
-            requestAnimationFrame(loop);
-        }
-        loop();
+        initRagdoll();
+        draw();
     </script>
 </body>
 
