@@ -1,210 +1,143 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Drive - Arcade</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Drive - Touch Edition</title>
     <style>
-        body {
-            background: #0f172a;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            color: white;
-            font-family: 'Segoe UI', sans-serif;
-            overflow: hidden;
-        }
-        
-        .back-link {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            text-decoration: none;
-            color: #38bdf8;
-            font-weight: bold;
-            transition: 0.3s;
-            z-index: 10;
-        }
-        
-        .back-link:hover {
-            color: white;
-            transform: translateX(-5px);
-        }
-        
-        canvas {
-            background: #1e293b;
-            border: 4px solid #334155;
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-        
-        .ui {
-            margin-bottom: 10px;
-            text-align: center;
-        }
-        
-        #score {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #fbbf24;
-        }
+        body { background: #020617; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none; }
+        .back-link { position: absolute; top: 20px; left: 20px; text-decoration: none; color: #38bdf8; font-weight: bold; z-index: 10; }
+        canvas { background: #0f172a; border: 3px solid #1e293b; max-width: 95vw; box-shadow: 0 0 30px rgba(56, 189, 248, 0.2); }
+        .ui { position: absolute; top: 20px; text-align: center; pointer-events: none; }
+        #score { font-size: 2.5rem; font-weight: bold; color: #38bdf8; }
     </style>
 </head>
-
 <body>
 
     <a href="index.html" class="back-link">← BACK TO ARCADE</a>
+    
     <div class="ui">
-        <h1>NEON DRIVE</h1>
         <div id="score">0</div>
+        <div style="color: #64748b;">Tap Left/Right to Steer</div>
     </div>
-    <canvas id="driveCanvas" width="400" height="600"></canvas>
-    <p style="color: #64748b; margin-top: 15px;">Use LEFT and RIGHT Arrows to Steer</p>
 
-    <script>
-        const canvas = document.getElementById("driveCanvas");
-        const ctx = canvas.getContext("2d");
-        const scoreElement = document.getElementById("score");
+    <canvas id="driveCanvas" width="400" height="700"></canvas>
 
-        let score = 0;
-        let gameSpeed = 5;
-        let gameOver = false;
-        let roadOffset = 0;
+<script>
+    const canvas = document.getElementById("driveCanvas");
+    const ctx = canvas.getContext("2d");
+    const scoreDisplay = document.getElementById("score");
 
-        const player = {
-            x: 175,
-            y: 500,
-            width: 50,
-            height: 80,
-            color: "#38bdf8"
-        };
+    let score = 0;
+    let isGameOver = false;
+    let gameSpeed = 6;
+    let obstacles = [];
+    
+    const player = { x: 175, y: 550, w: 50, h: 80, lane: 1 };
+    const lanes = [75, 175, 275]; // Lane centers
 
-        let enemies = [];
+    // --- STEERING LOGIC (TOUCH & MOUSE) ---
+    function move(dir) {
+        if (dir === 'left' && player.lane > 0) player.lane--;
+        if (dir === 'right' && player.lane < 2) player.lane++;
+        player.x = lanes[player.lane];
+    }
 
-        // Lane positions
-        const lanes = [75, 175, 275];
+    // Keyboard (Desktop)
+    window.addEventListener('keydown', (e) => {
+        if (e.key === "ArrowLeft") move('left');
+        if (e.key === "ArrowRight") move('right');
+        if (isGameOver && e.code === "Space") reset();
+    });
 
-        function spawnEnemy() {
-            const lane = lanes[Math.floor(Math.random() * lanes.length)];
-            enemies.push({
-                x: lane,
-                y: -100,
-                width: 50,
-                height: 80,
-                color: "#fb7185",
-                speed: Math.random() * 2 + 2
-            });
+    // Touch (Mobile)
+    canvas.addEventListener('touchstart', (e) => {
+        if (isGameOver) {
+            reset();
+            return;
         }
+        const touchX = e.touches[0].clientX;
+        const midPoint = window.innerWidth / 2;
+        
+        if (touchX < midPoint) move('left');
+        else move('right');
+    }, { passive: false });
 
-        window.addEventListener("keydown", (e) => {
-            if (gameOver && e.code === "Space") resetGame();
-            if (e.key === "ArrowLeft" && player.x > 75) player.x -= 100;
-            if (e.key === "ArrowRight" && player.x < 275) player.x += 100;
+    function spawnObstacle() {
+        if (Math.random() < 0.02) {
+            const laneIndex = Math.floor(Math.random() * 3);
+            obstacles.push({ x: lanes[laneIndex], y: -100, w: 50, h: 80, color: '#f472b6' });
+        }
+    }
+
+    function reset() {
+        score = 0; obstacles = []; gameSpeed = 6; isGameOver = false;
+        player.lane = 1; player.x = lanes[1]; animate();
+    }
+
+    function update() {
+        if (isGameOver) return;
+        score++;
+        scoreDisplay.innerText = Math.floor(score/10);
+        if (score % 1000 === 0) gameSpeed += 1;
+
+        spawnObstacle();
+
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            obstacles[i].y += gameSpeed;
+
+            // Collision Detection
+            if (player.x < obstacles[i].x + obstacles[i].w &&
+                player.x + player.w > obstacles[i].x &&
+                player.y < obstacles[i].y + obstacles[i].h &&
+                player.y + player.h > obstacles[i].y) {
+                isGameOver = true;
+            }
+
+            if (obstacles[i].y > 800) obstacles.splice(i, 1);
+        }
+    }
+
+    function draw() {
+        ctx.fillStyle = "#0f172a";
+        ctx.fillRect(0, 0, 400, 700);
+
+        // Lanes
+        ctx.strokeStyle = "#1e293b";
+        ctx.setLineDash([20, 20]);
+        [150, 250].forEach(x => {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 700); ctx.stroke();
         });
+        ctx.setLineDash([]);
 
-        function resetGame() {
-            score = 0;
-            gameSpeed = 5;
-            enemies = [];
-            player.x = 175;
-            gameOver = false;
-            scoreElement.innerText = "0";
-            animate();
+        // Player Car
+        ctx.fillStyle = "#38bdf8";
+        ctx.shadowBlur = 15; ctx.shadowColor = "#38bdf8";
+        ctx.fillRect(player.x, player.y, player.w, player.h);
+
+        // Obstacles
+        ctx.fillStyle = "#f472b6";
+        ctx.shadowColor = "#f472b6";
+        obstacles.forEach(ob => ctx.fillRect(ob.x, ob.y, ob.w, ob.h));
+        ctx.shadowBlur = 0;
+
+        if (isGameOver) {
+            ctx.fillStyle = "rgba(0,0,0,0.8)";
+            ctx.fillRect(0, 0, 400, 700);
+            ctx.fillStyle = "white";
+            ctx.textAlign = "center";
+            ctx.font = "bold 30px Rajdhani";
+            ctx.fillText("ENGINE STALLED", 200, 320);
+            ctx.font = "18px Rajdhani";
+            ctx.fillText("TAP ANYWHERE TO RESTART", 200, 360);
         }
+    }
 
-        function update() {
-            if (gameOver) return;
-
-            // Move road lines
-            roadOffset += gameSpeed;
-            if (roadOffset > 40) roadOffset = 0;
-
-            // Spawn enemies
-            if (Math.random() < 0.02) spawnEnemy();
-
-            enemies.forEach((enemy, index) => {
-                enemy.y += gameSpeed;
-
-                // Collision
-                if (
-                    player.x < enemy.x + enemy.width &&
-                    player.x + player.width > enemy.x &&
-                    player.y < enemy.y + enemy.height &&
-                    player.y + player.height > enemy.y
-                ) {
-                    gameOver = true;
-                }
-
-                // Remove and Score
-                if (enemy.y > canvas.height) {
-                    enemies.splice(index, 1);
-                    score += 10;
-                    scoreElement.innerText = score;
-                    gameSpeed += 0.05;
-                }
-            });
-        }
-
-        function draw() {
-            // Draw Road
-            ctx.fillStyle = "#1e293b";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Draw Road Lines
-            ctx.strokeStyle = "#475569";
-            ctx.setLineDash([20, 20]);
-            ctx.lineDashOffset = -roadOffset;
-            ctx.lineWidth = 4;
-
-            ctx.beginPath();
-            ctx.moveTo(133, 0);
-            ctx.lineTo(133, canvas.height);
-            ctx.moveTo(266, 0);
-            ctx.lineTo(266, canvas.height);
-            ctx.stroke();
-
-            // Draw Player
-            ctx.fillStyle = player.color;
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = player.color;
-            ctx.fillRect(player.x, player.y, player.width, player.height);
-
-            // Draw Enemies
-            ctx.shadowColor = "#fb7185";
-            ctx.fillStyle = "#fb7185";
-            enemies.forEach(enemy => {
-                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-            });
-            ctx.shadowBlur = 0;
-
-            if (gameOver) {
-                ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = "white";
-                ctx.textAlign = "center";
-                ctx.font = "bold 40px Arial";
-                ctx.fillText("CRASHED!", canvas.width / 2, canvas.height / 2);
-                ctx.font = "20px Arial";
-                ctx.fillText("Press SPACE to Restart", canvas.width / 2, canvas.height / 2 + 50);
-            }
-        }
-
-        function animate() {
-            if (!gameOver) {
-                update();
-                draw();
-                requestAnimationFrame(animate);
-            } else {
-                draw();
-            }
-        }
-
-        animate();
-    </script>
+    function animate() {
+        update(); draw();
+        if (!isGameOver) requestAnimationFrame(animate);
+    }
+    animate();
+</script>
 </body>
-
 </html>
