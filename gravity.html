@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Repulsor Pop - Ultra Edition</title>
+    <title>Repulsor Pop - God Mode</title>
     <style>
         body { background: #000; margin: 0; overflow: hidden; touch-action: none; }
         canvas { display: block; }
-        .back-link { position: absolute; top: 20px; left: 20px; color: #38bdf8; text-decoration: none; font-weight: bold; font-family: sans-serif; z-index: 10; }
+        .back-link { position: absolute; top: 20px; left: 20px; color: #38bdf8; text-decoration: none; font-weight: bold; font-family: sans-serif; z-index: 100; opacity: 0.5; }
     </style>
 </head>
 <body>
@@ -19,8 +19,7 @@
     const ctx = canvas.getContext('2d');
 
     let particles = [];
-    // INCREASED COUNT: From ~150 to 1500 for that "Triple A" app feel
-    const particleCount = 1500; 
+    const particleCount = 5000; // MASSIVE INCREASE
     let mouse = { x: -1000, y: -1000, active: false };
 
     function resize() {
@@ -35,66 +34,72 @@
             particles.push({
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
-                vx: (Math.random() - 0.5) * 2,
-                vy: (Math.random() - 0.5) * 2,
-                size: Math.random() * 2 + 0.5,
-                color: `hsl(${Math.random() * 60 + 180}, 80%, 60%)` // Neon blues/cyans
+                vx: 0,
+                vy: 0,
+                size: Math.random() * 1.5 + 0.5,
+                // Using a brighter set of colors for high density
+                color: `hsl(${Math.random() * 40 + 190}, 100%, 70%)` 
             });
         }
     }
 
-    function handleInput(x, y, active) {
-        mouse.x = x;
-        mouse.y = y;
-        mouse.active = active;
-    }
-
-    window.addEventListener('mousemove', e => handleInput(e.clientX, e.clientY, true));
+    // Input listeners
+    const setPos = (e) => {
+        const t = e.touches ? e.touches[0] : e;
+        mouse.x = t.clientX;
+        mouse.y = t.clientY;
+        mouse.active = true;
+    };
+    window.addEventListener('mousemove', setPos);
     window.addEventListener('mousedown', () => mouse.active = true);
     window.addEventListener('mouseup', () => mouse.active = false);
-
-    window.addEventListener('touchstart', e => {
-        handleInput(e.touches[0].clientX, e.touches[0].clientY, true);
-    }, { passive: false });
-    window.addEventListener('touchmove', e => {
-        handleInput(e.touches[0].clientX, e.touches[0].clientY, true);
-    }, { passive: false });
+    window.addEventListener('touchstart', setPos, { passive: false });
+    window.addEventListener('touchmove', (e) => { e.preventDefault(); setPos(e); }, { passive: false });
     window.addEventListener('touchend', () => mouse.active = false);
 
     function animate() {
-        // TRAIL EFFECT: Instead of clearRect, we use a fade
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.15)'; 
+        // Shorter trails for better performance with high counts
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        particles.forEach(p => {
+        const margin = 2;
+        // NEW PRECISION RADIUS: 80px instead of 250px
+        const interactRadius = 80;
+        const radiusSq = interactRadius * interactRadius;
+
+        for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
+
             if (mouse.active) {
                 const dx = p.x - mouse.x;
                 const dy = p.y - mouse.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
+                const distSq = dx * dx + dy * dy;
                 
-                if (dist < 200) {
-                    const force = (200 - dist) / 1000;
+                if (distSq < radiusSq && distSq > 1) { 
+                    const dist = Math.sqrt(distSq);
+                    // Increased force multiplier (now 150) to make the small radius punchy
+                    const force = (interactRadius - dist) / 150; 
                     p.vx += (dx / dist) * force;
                     p.vy += (dy / dist) * force;
                 }
             }
 
-            // Friction to keep things smooth
-            p.vx *= 0.98;
-            p.vy *= 0.98;
+            p.vx *= 0.985;
+            p.vy *= 0.985;
 
             p.x += p.vx;
             p.y += p.vy;
 
-            // Bounce off walls
-            if (s = p.x < 0 || p.x > canvas.width) p.vx *= -1;
-            if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+            // Anti-Stuck Logic
+            if (p.x < margin) { p.x = margin; p.vx = Math.abs(p.vx) + 2; }
+            else if (p.x > canvas.width - margin) { p.x = canvas.width - margin; p.vx = -Math.abs(p.vx) - 2; }
+
+            if (p.y < margin) { p.y = margin; p.vy = Math.abs(p.vy) + 2; }
+            else if (p.y > canvas.height - margin) { p.y = canvas.height - margin; p.vy = -Math.abs(p.vy) - 2; }
 
             ctx.fillStyle = p.color;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            ctx.fill();
-        });
+            ctx.fillRect(p.x, p.y, p.size, p.size);
+        }
 
         requestAnimationFrame(animate);
     }
