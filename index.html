@@ -30,7 +30,6 @@
             padding: 40px 20px;
             width: 90%;
             max-width: 1200px;
-            /* Adaptive Grid: Stays in 1 column on mobile, expands on desktop */
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             z-index: 10;
         }
@@ -56,13 +55,28 @@
         }
 
         .emoji { font-size: 2.5rem; margin-bottom: 15px; filter: drop-shadow(0 0 8px var(--neon)); }
-        .game-card h2 { margin: 0; font-size: 1.6rem; color: #f8fafc; }
-        .game-card p { font-size: 0.85rem; color: #64748b; margin-top: 12px; }
+        
+        /* Music Button Styling */
+        #musicToggle {
+            position: fixed; bottom: 20px; right: 20px; z-index: 1000;
+            background: rgba(56, 189, 248, 0.15); border: 1px solid var(--neon);
+            color: white; border-radius: 50%; width: 55px; height: 55px;
+            cursor: pointer; font-size: 1.4rem; display: flex;
+            align-items: center; justify-content: center;
+            transition: 0.3s; backdrop-filter: blur(5px);
+        }
+        #musicToggle:hover { background: var(--neon); box-shadow: 0 0 15px var(--neon); }
 
         footer { padding: 60px; color: #334155; font-size: 0.9rem; z-index: 10; }
     </style>
 </head>
 <body>
+
+    <audio id="bgMusic" loop>
+        <source src="bg-music.mp3" type="audio/mpeg">
+    </audio>
+
+    <button id="musicToggle">🔈</button>
 
     <canvas id="starfield"></canvas>
 
@@ -76,7 +90,7 @@
         <a href="Brick Breaker.html" class="game-card"><div class="emoji">🧱</div><h2>BRICK BREAKER</h2><p>Classic Arcade Smash</p></a>
         <a href="runner.html" class="game-card"><div class="emoji">🏃‍♂️</div><h2>CYBER RUNNER</h2><p>Infinite High-Speed Dash</p></a>
         <a href="shooter.html" class="game-card"><div class="emoji">🚀</div><h2>STAR VANGUARD</h2><p>Galactic Bullet Hell</p></a>
-        <a href="gravity.html" class="game-card"><div class="emoji">🫧</div><h2>REPULSOR POP</h2><p>Interactive Physics Fun</p></a>
+        <a href="gravity.html" class="game-card"><div class="emoji">🫧</div><h2>REPULSOR POP</h2><p>5,000 Particle Physics</p></a>
         <a href="fling.html" class="game-card"><div class="emoji">🤸‍♂️</div><h2>BUDDY FLING</h2><p>Ragdoll Orbit Physics</p></a>
         <a href="drive.html" class="game-card"><div class="emoji">🏎️</div><h2>NEON DRIVE</h2><p>High-Speed Highway Dodge</p></a>
         <a href="merge.html" class="game-card"><div class="emoji">⬢</div><h2>NEON MERGE</h2><p>Hexagonal Puzzle Fusion</p></a>
@@ -87,89 +101,85 @@
         </a>
     </div>
 
-    <footer> © MADE BY PAWAN • 2026</footer>
+    <footer>MADE BY PAWAN • 2026</footer>
 
     <script>
-    const canvas = document.getElementById('starfield');
-    const ctx = canvas.getContext('2d');
-    let stars = [];
+        // --- STARFIELD LOGIC (500 Stars) ---
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
 
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        initStars();
-    }
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initStars();
+        }
 
-    function initStars() {
-        stars = [];
-        // INCREASED COUNT: 500 stars for a "Deep Space" look
-        for (let i = 0; i < 500; i++) {
-            stars.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                size: Math.random() * 1.5, // Smaller stars look better in high numbers
-                baseSpeed: Math.random() * 0.4 + 0.1,
-                vx: 0,
-                vy: 0,
-                // Random opacity for a twinkling effect
-                opacity: Math.random() * 0.5 + 0.3
+        function initStars() {
+            stars = [];
+            for (let i = 0; i < 500; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 1.5,
+                    baseSpeed: Math.random() * 0.4 + 0.1,
+                    vx: 0, vy: 0,
+                    opacity: Math.random() * 0.5 + 0.3
+                });
+            }
+        }
+
+        function handleInteraction(x, y) {
+            stars.forEach(s => {
+                const dx = s.x - x; const dy = s.y - y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 180) {
+                    const force = (180 - dist) / 12;
+                    s.vx = (dx / dist) * force;
+                    s.vy = (dy / dist) * force;
+                }
             });
         }
-    }
 
-    function handleInteraction(x, y) {
-        stars.forEach(s => {
-            const dx = s.x - x;
-            const dy = s.y - y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < 180) { // Slightly wider interaction range
-                const force = (180 - dist) / 12;
-                s.vx = (dx / dist) * force;
-                s.vy = (dy / dist) * force;
+        window.addEventListener('mousemove', (e) => handleInteraction(e.clientX, e.clientY));
+        window.addEventListener('touchstart', (e) => handleInteraction(e.touches[0].clientX, e.touches[0].clientY));
+
+        function animate() {
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            stars.forEach(s => {
+                s.vx *= 0.97; s.vy *= 0.97;
+                s.x += s.vx; s.y += s.baseSpeed + s.vy;
+                if (s.y > canvas.height) s.y = 0;
+                if (s.x < 0) s.x = canvas.width;
+                if (s.x > canvas.width) s.x = 0;
+                ctx.globalAlpha = s.opacity;
+                ctx.fillStyle = 'white';
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2); ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+            requestAnimationFrame(animate);
+        }
+
+        // --- MUSIC LOGIC ---
+        const music = document.getElementById('bgMusic');
+        const btn = document.getElementById('musicToggle');
+        let isPlaying = false;
+
+        btn.addEventListener('click', () => {
+            if (isPlaying) {
+                music.pause();
+                btn.innerText = "🔈";
+            } else {
+                music.play();
+                btn.innerText = "🔊";
             }
+            isPlaying = !isPlaying;
         });
-    }
 
-    window.addEventListener('mousemove', (e) => handleInteraction(e.clientX, e.clientY));
-    window.addEventListener('touchstart', (e) => {
-        handleInteraction(e.touches[0].clientX, e.touches[0].clientY);
-    });
-    window.addEventListener('touchmove', (e) => {
-        handleInteraction(e.touches[0].clientX, e.touches[0].clientY);
-    });
-
-    function animate() {
-        ctx.fillStyle = '#020617';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        stars.forEach(s => {
-            s.vx *= 0.97; // Smooth friction
-            s.vy *= 0.97;
-            
-            s.x += s.vx;
-            s.y += s.baseSpeed + s.vy;
-
-            // Loop logic
-            if (s.y > canvas.height) s.y = 0;
-            if (s.x < 0) s.x = canvas.width;
-            if (s.x > canvas.width) s.x = 0;
-
-            ctx.globalAlpha = s.opacity;
-            ctx.fillStyle = 'white';
-            ctx.beginPath();
-            ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
-            ctx.fill();
-        });
-        ctx.globalAlpha = 1.0;
-        requestAnimationFrame(animate);
-    }
-
-    window.addEventListener('resize', resize);
-    resize();
-    animate();
-</script>
+        window.addEventListener('resize', resize);
+        resize();
+        animate();
+    </script>
 </body>
 </html>
-
-
-
