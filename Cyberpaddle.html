@@ -68,13 +68,13 @@
 
         if (ball.y - ball.r < 0 || ball.y + ball.r > 500) ball.vy = -ball.vy;
 
-    if (ball.vx > 0 && ball.x > 320) {
+    if (ball.vx > 0 && ball.x > 520) {
             let aiCenter = ai.y + paddleH / 2;
-            let aiSpeed = 3.8;
+            let aiSpeed = 2.5;
 
-            if (aiCenter < ball.y - 25) {
+            if (aiCenter < ball.y - 35) {
                 ai.y += aiSpeed;
-            } else if (aiCenter > ball.y + 25) {
+            } else if (aiCenter > ball.y + 35) {
                 ai.y -= aiSpeed;
             }
         }
